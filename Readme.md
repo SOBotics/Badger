@@ -24,7 +24,7 @@ To run this bot under your account:
         51,Python
 
 3. Create a new file named `login.properties` inside `data`. This contains 3 properties, `email`, `password` and `roomId`. A sample file is 
-
+       
        email=mymail@mailprovider.com
        password=changethis
        roomId=111347

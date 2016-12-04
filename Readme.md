@@ -2,7 +2,7 @@
 
 Badger queries the [Stack Exchange API](http://api.stackexchange.com/), specifically for [badges](https://api.stackexchange.com/docs/badges). 
 
-The main idea of Badger was to return the new list of Tumbleweed posts on Stack Overflow, every 10 minutes. The motivation for this bot was the [Weed Eater](http://winterbash2015.stackexchange.com/weed-eater) hat. Badger now track other badges also. 
+The main idea of Badger was to return the new list of Tumbleweed posts on Stack Overflow, every 10 minutes. The motivation for this bot was the [Weed Eater](http://winterbash2015.stackexchange.com/weed-eater) hat. Badger now tracks other badges also. 
 
 Badger queries the API every 10 mins. If there are new badges, Then it'll print the number of new posts with a link to that particular badge page. If there are no new ones, It waits for another 10 minutes. 
 
@@ -15,3 +15,18 @@ The command list is as follows
     commands - Returns this list of commands
     track    - Tracks a given badge. Syntax: track badgeId badgeName
 
+To run this bot under your account:
+
+1. Create a new folder named `data` at the same level as the `pom.xml`.
+2. Create a new file named `trackedBadges.txt` inside `data`. This contains a list of the badges that are needed to be tracked. A sample file is 
+        
+        63,Tumbleweed
+        51,Python
+
+3. Create a new file named `login.properties` inside `data`. This contains 3 properties, `email`, `password` and `roomId`. A sample file is 
+
+       email=mymail@mailprovider.com
+       password=changethis
+       roomId=111347
+
+4. Run the main method. 

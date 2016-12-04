@@ -48,8 +48,9 @@ public class RunBadger {
             prop.load(new FileInputStream(propertiesFile));
             String email = prop.getProperty("email");
             String password = prop.getProperty("password");
+            int roomId = Integer.parseInt(prop.getProperty("roomId"));
             client = new StackExchangeClient(email, password);
-            Room sobotics = client.joinRoom("stackoverflow.com" ,111347);
+            Room sobotics = client.joinRoom("stackoverflow.com" ,roomId);
 
             sobotics.addEventListener(EventType.MESSAGE_REPLY, event->mention(sobotics, event, true));
             sobotics.addEventListener(EventType.USER_MENTIONED,event->mention(sobotics, event, false));

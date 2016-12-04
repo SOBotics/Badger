@@ -18,15 +18,15 @@ The command list is as follows
 To run this bot under your account:
 
 1. Create a new folder named `data` at the same level as the `pom.xml`.
-2. Create a new file named `trackedBadges.txt` inside `data`. This contains a list of the badges that are needed to be tracked. A sample file is 
+2. Create a new file named `trackedBadges.txt` inside `data`. This contains a list of the badges that are needed to be tracked. Sample file contents is 
         
         63,Tumbleweed
         51,Python
 
-3. Create a new file named `login.properties` inside `data`. This contains 3 properties, `email`, `password` and `roomId`. A sample file is 
-       
-       email=mymail@mailprovider.com
-       password=changethis
-       roomId=111347
+3. Create a new file named `login.properties` inside `data`. This contains 3 properties, `email`, `password` and `roomId`. Sample file contents is 
+        
+        email=mymail@mailprovider.com
+        password=changethis
+        roomId=111347
 
 4. Run the main method. 

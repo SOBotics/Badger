@@ -1,4 +1,4 @@
-# Badger 
+# [Badger](http://codereview.stackexchange.com/questions/148570/badger-the-tumbleweed-detector) 
 
 Badger queries the [Stack Exchange API](http://api.stackexchange.com/), specifically for [badges](https://api.stackexchange.com/docs/badges). 
 

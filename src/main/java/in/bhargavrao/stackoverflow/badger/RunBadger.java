@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 public class RunBadger {
 
     private static final String apiKey = "kmtAuIIqwIrwkXm1*p3qqA((";
-    private static final String docString = "[Badger](//codereview.stackexchange.com/questions/148570)";
+    private static final String docString = "[Badger](https://git.io/v1lYA)";
 
     public static String dataFile = "./data/trackedBadges.txt";
     public static String propertiesFile = "./data/login.properties";
@@ -82,18 +82,23 @@ public class RunBadger {
     }
 
     private static void printBadges(Room room, String badgeId, String badgeName) {
+
+        int numberOfBadges = getBadgeCount(badgeId);
+        if(numberOfBadges>0) {
+            room.send("[ "+docString+" ] " + numberOfBadges + " new ["+badgeName+" badges](//stackoverflow.com/help/badges/"+badgeId+")");
+        }
+        previousBadgeTimestamp = Instant.now();
+    }
+
+    public static int getBadgeCount(String badgeId){
         JsonArray badges;
         try {
             badges = getBadges(badgeId).get("items").getAsJsonArray();
         } catch (IOException e) {
             e.printStackTrace();
-            return;
+            return -1;
         }
-        int numberOfBadges = badges.size();
-        if(numberOfBadges!=0) {
-            room.send("[ "+docString+" ] " + numberOfBadges + " new ["+badgeName+" badges](//stackoverflow.com/help/badges/"+badgeId+")");
-        }
-        previousBadgeTimestamp = Instant.now();
+        return badges.size();
     }
 
     public static JsonObject getBadges(String badgeId) throws IOException{

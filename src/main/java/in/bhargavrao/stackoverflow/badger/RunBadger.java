@@ -32,9 +32,12 @@ public class RunBadger {
     private static final String apiKey = "kmtAuIIqwIrwkXm1*p3qqA((";
     private static final String docString = "[Badger](https://git.io/v1lYA)";
 
+    private static String username = "bad";
+
     public static String dataFile = "./data/trackedBadges.txt";
     public static String propertiesFile = "./data/login.properties";
     public static Instant previousBadgeTimestamp = Instant.now();
+
 
     public static void main(String[] args) {
         startApp();
@@ -48,6 +51,7 @@ public class RunBadger {
             prop.load(new FileInputStream(propertiesFile));
             String email = prop.getProperty("email");
             String password = prop.getProperty("password");
+            username = prop.getProperty("username").substring(0,3).toLowerCase();
             int roomId = Integer.parseInt(prop.getProperty("roomId"));
             client = new StackExchangeClient(email, password);
             Room sobotics = client.joinRoom("stackoverflow.com" ,roomId);
@@ -86,12 +90,16 @@ public class RunBadger {
 
         int numberOfBadges = getBadgeCount(badgeId);
         if(numberOfBadges>0) {
-            room.send("[ "+docString+" ] " + numberOfBadges + " new ["+badgeName+" badges](//stackoverflow.com/help/badges/"+badgeId+")");
+            room.send("[ " + docString + " ] " + numberOfBadges + " new " + prettyPrintBadge(badgeId, badgeName));
         }
         previousBadgeTimestamp = Instant.now();
     }
 
-    public static int getBadgeCount(String badgeId){
+    private static String prettyPrintBadge(String badgeId, String badgeName) {
+        return "[" + badgeName + " badges](//stackoverflow.com/help/badges/" + badgeId + ")";
+    }
+
+    private static int getBadgeCount(String badgeId){
         JsonArray badges;
         try {
             badges = getBadges(badgeId).get("items").getAsJsonArray();
@@ -102,12 +110,12 @@ public class RunBadger {
         return badges.size();
     }
 
-    public static JsonObject getBadges(String badgeId) throws IOException{
+    private static JsonObject getBadges(String badgeId) throws IOException{
         String badgeIdUrl = "https://api.stackexchange.com/2.2/badges/"+badgeId+"/recipients";
         return get(badgeIdUrl,"site","stackoverflow","pagesize","100","fromdate",String.valueOf(previousBadgeTimestamp.minusSeconds(1).getEpochSecond()),"key",apiKey);
     }
 
-    public static boolean isNumeric(String str)
+    private static boolean isNumeric(String str)
     {
         try{
             double d = Double.parseDouble(str);
@@ -130,7 +138,63 @@ public class RunBadger {
             room.send("    alive    - Test to check if the bot is alive or not.\n" +
                       "    help     - Returns description of the bot\n" +
                       "    commands - Returns this list of commands\n" +
-                      "    track    - Tracks a given badge. Syntax: `track badgeId badgeName`");
+                      "    track    - Tracks a given badge. Syntax: `track badgeId badgeName`\n" +
+                      "    untrack  - UnTracks a given badge.\n" +
+                      "    tracked  - Returns a list of tracked badges.");
+        }
+        else if(message.toLowerCase().contains("tracked")){
+            List<String> lines = new ArrayList<>();
+            try {
+                lines = readFile(dataFile);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            String trackedList = "";
+            for(String line: lines){
+                trackedList+="    "+line.trim().split(",")[0]+" : "+line.trim().split(",")[1]+"\n";
+            }
+            room.send(trackedList);
+        }
+        else if(message.toLowerCase().contains("untrack")){
+            if (!(room.getUser(event.getUserId()).isModerator() || room.getUser(event.getUserId()).isRoomOwner())){
+                room.replyTo(event.getMessage().getId(),"You must be a room owner like @\u200Bpetter or @\u200Btuna, or a moderator, like @bhargav to run this command.");
+                return;
+            }
+            String parts[] = message.toLowerCase().split(" ");
+            List<String> lines = new ArrayList<>();
+            if(parts.length==3 && parts[1].toLowerCase().equals("untrack")) {
+                try {
+                    lines = readFile(dataFile);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                List<String> newLines = new ArrayList<>();
+                String toBeUntracked = parts[2].trim().toLowerCase();
+
+                for (String line : lines) {
+                    if(isNumeric(toBeUntracked)) {
+                        if (line.trim().toLowerCase().startsWith(toBeUntracked + ",")) {
+                            room.send("Badge Number "+toBeUntracked+" is untracked");
+                            continue;
+                        }
+                    }
+                    else{
+                        if (line.trim().toLowerCase().endsWith(","+toBeUntracked)) {
+                            room.send("Badge "+toBeUntracked+" is untracked");
+                            continue;
+                        }
+                    }
+                    newLines.add(line);
+                }
+                try {
+                    Files.write(Paths.get(dataFile), newLines, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            else{
+                room.send("Wrong format. The syntax is `untrack roomName|roomId`");
+            }
         }
         else if(message.toLowerCase().contains("track")){
             String parts[] = message.split(" ");
@@ -142,8 +206,12 @@ public class RunBadger {
                 room.replyTo(event.getMessage().getId(),"The badge name must be a single word");
                 return;
             }
+            if (!(room.getUser(event.getUserId()).isModerator() || room.getUser(event.getUserId()).isRoomOwner())){
+                room.replyTo(event.getMessage().getId(),"You must be a room owner like @\u200Bpetter or @\u200Btuna, or a moderator, like @bhargav to run this command.");
+                return;
+            }
             if(parts.length==4 &&
-                    parts[0].toLowerCase().startsWith("@bad") &&
+                    parts[0].toLowerCase().startsWith("@"+username) &&
                     parts[1].toLowerCase().equals("track") &&
                     isNumeric(parts[2])){
 
@@ -158,7 +226,7 @@ public class RunBadger {
                 }
                 Runnable printer = () -> printBadges(room, badgeId, badgeName);
                 executeApp(printer);
-                room.replyTo(event.getMessage().getId(),"Tracking ["+badgeName+" badges](//stackoverflow.com/help/badges/"+badgeId+")");
+                room.replyTo(event.getMessage().getId(),"Tracking " + prettyPrintBadge(badgeId,badgeName));
             }
             else {
                 room.replyTo(event.getMessage().getId(),"Wrong format. The syntax is `track badgeId badgeName`");
@@ -174,5 +242,9 @@ public class RunBadger {
         }
         JsonObject root = new JsonParser().parse(json).getAsJsonObject();
         return root;
+    }
+
+    public static List<String> readFile(String filename) throws IOException{
+        return Files.readAllLines(Paths.get(filename));
     }
 }

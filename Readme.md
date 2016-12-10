@@ -11,9 +11,12 @@ Badger queries the API every 10 mins. If there are new badges, Then it'll print 
 The command list is as follows 
 
     alive    - Test to check if the bot is alive or not.
-    help     - Returns description of the bot
-    commands - Returns this list of commands
+    help     - Returns description of the bot.
+    commands - Returns this list of commands.
     track    - Tracks a given badge. Syntax: track badgeId badgeName
+    untrack  - UnTracks a given badge.
+    tracked  - Returns a list of tracked badges.
+
 
 To run this bot under your account:
 
@@ -23,10 +26,11 @@ To run this bot under your account:
         63,Tumbleweed
         51,Python
 
-3. Create a new file named `login.properties` inside `data`. This contains 3 properties, `email`, `password` and `roomId`. Sample file contents is 
+3. Create a new file named `login.properties` inside `data`. This contains 4 properties, `email`, `password`, `username`, and `roomId`. Sample file contents is 
         
         email=mymail@mailprovider.com
         password=changethis
         roomId=111347
+        username=nameofthebot
 
 4. Run the main method. 

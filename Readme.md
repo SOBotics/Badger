@@ -1,6 +1,6 @@
-# [Badger](http://codereview.stackexchange.com/questions/148570/badger-the-tumbleweed-detector) 
+# Badger
 
-Badger queries the [Stack Exchange API](http://api.stackexchange.com/), specifically for [badges](https://api.stackexchange.com/docs/badges). 
+[Badger](http://codereview.stackexchange.com/questions/148570/badger-the-tumbleweed-detector)  queries the [Stack Exchange API](http://api.stackexchange.com/), specifically for [badges](https://api.stackexchange.com/docs/badges). 
 
 The main idea of Badger was to return the new list of Tumbleweed posts on Stack Overflow, every 10 minutes. The motivation for this bot was the [Weed Eater](http://winterbash2015.stackexchange.com/weed-eater) hat. Badger now tracks other badges also. 
 

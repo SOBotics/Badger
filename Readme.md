@@ -39,4 +39,4 @@ To run this bot under your account:
 
 ---------------
 
-See the other [wiki pages](/wiki). 
+See the other [wiki pages](/Badger/wiki). 

@@ -1,4 +1,4 @@
 # Badger 
 
 
-- [commands](/wiki/commands). 
+- [commands](/Badger/wiki/commands). 

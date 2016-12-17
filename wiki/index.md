@@ -1,2 +1,4 @@
 # Badger 
 
+
+- [commands](/wiki/commands). 

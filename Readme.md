@@ -36,3 +36,7 @@ To run this bot under your account:
         username=nameofthebot
 
 4. Run the main method. 
+
+---------------
+
+See the other [wiki pages](/wiki). 

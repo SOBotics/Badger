@@ -11,3 +11,7 @@ The `tracked` command returns the list of the tracked badges in the current room
     262 : publicist
 
 The `commands` command can be used to retrieve the list of commands. 
+
+----
+
+<sub>Back to [Home](/Badger)</sub>

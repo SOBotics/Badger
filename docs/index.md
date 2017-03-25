@@ -13,7 +13,7 @@ Badger queries the API every 10 mins. If there are new badges, Then it'll print 
 
 Quick Links
 
-- [List of commands](/Badger/commands). 
-- [Interacting with the bot](/Badger/interact). 
-- [Track Badges in another room](/Badger/invite).
-- [Run the bot under another account](/Badger/runbot).
+- [List of commands](/commands). 
+- [Interacting with the bot](/interact). 
+- [Track Badges in another room](/invite).
+- [Run the bot under another account](/runbot).

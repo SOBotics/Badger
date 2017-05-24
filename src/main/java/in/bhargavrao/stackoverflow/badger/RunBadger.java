@@ -3,10 +3,13 @@ package in.bhargavrao.stackoverflow.badger;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import fr.tunaki.stackoverflow.chat.ChatHost;
 import fr.tunaki.stackoverflow.chat.Room;
 import fr.tunaki.stackoverflow.chat.StackExchangeClient;
 import fr.tunaki.stackoverflow.chat.event.EventType;
+import fr.tunaki.stackoverflow.chat.event.MessagePostedEvent;
 import fr.tunaki.stackoverflow.chat.event.PingMessageEvent;
+import org.sobotics.PingService;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 
@@ -20,9 +23,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+
 
 /**
  * Created by bhargav.h on 21-Oct-16.
@@ -51,32 +57,60 @@ public class RunBadger {
             prop.load(new FileInputStream(propertiesFile));
             String email = prop.getProperty("email");
             String password = prop.getProperty("password");
+            String redundaKey = prop.getProperty("redundaKey");
             username = prop.getProperty("username").substring(0,3).toLowerCase();
             int roomId = Integer.parseInt(prop.getProperty("roomId"));
             client = new StackExchangeClient(email, password);
-            Room sobotics = client.joinRoom("stackoverflow.com" ,roomId);
+            Room sobotics = client.joinRoom(ChatHost.STACK_OVERFLOW ,roomId);
 
-            sobotics.addEventListener(EventType.MESSAGE_REPLY, event->mention(sobotics, event, true));
-            sobotics.addEventListener(EventType.USER_MENTIONED,event->mention(sobotics, event, false));
+
+            PingService redunda = new PingService(redundaKey, "46c3719");
+            redunda.start();
+
+            sobotics.addEventListener(EventType.MESSAGE_REPLY, event->mention(sobotics, event, true, redunda));
+            sobotics.addEventListener(EventType.USER_MENTIONED,event->mention(sobotics, event, false, redunda));
+            sobotics.addEventListener(EventType.MESSAGE_POSTED ,event-> newMessage(sobotics, event, false));
 
             sobotics.send(docString+" started");
 
-            List<String> lines = new ArrayList<String>();
-            try {
-                lines = Files.readAllLines(Paths.get(dataFile));
-            }
-            catch (IOException e){
-                e.printStackTrace();
-            }
-            for(String i: lines) {
-                String badgeId = i.split(",")[0];
-                String badgeName = i.split(",")[1];
-                Runnable printer = () -> printBadges(sobotics, badgeId, badgeName);
-                executeApp(printer);
-            }
+            boolean standbyMode = redunda.standby.get();
+            System.out.println(standbyMode);
+            startReporting(sobotics, redunda);
         }
         catch (IOException e){
             e.printStackTrace();
+        }
+    }
+
+    private static void startReporting(Room sobotics, PingService service) {
+        List<String> lines = new ArrayList<String>();
+        try {
+            lines = Files.readAllLines(Paths.get(dataFile));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        for (String i : lines) {
+            String badgeId = i.split(",")[0];
+            String badgeName = i.split(",")[1];
+            Runnable printer = () -> printBadges(sobotics, badgeId, badgeName, service);
+            executeApp(printer);
+        }
+    }
+
+    private static void newMessage(Room room, MessagePostedEvent event, boolean b) {
+        String message = event.getMessage().getPlainContent();
+        int cp = Character.codePointAt(message, 0);
+        if(message.trim().startsWith("@bots alive")){
+            room.send("@Natty alive also? I'm alive");
+        }
+        else if (cp == 128642 || (cp>=128644 && cp<=128650)){
+            CompletionStage<Long> messageId = room.send("@nat say \uD83D\uDE83");
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            messageId.thenAccept(id -> room.edit(id, "\uD83D\uDE83"));
         }
     }
 
@@ -86,13 +120,16 @@ public class RunBadger {
         executorService.scheduleAtFixedRate(printer, 0, 10, TimeUnit.MINUTES);
     }
 
-    private static void printBadges(Room room, String badgeId, String badgeName) {
 
-        int numberOfBadges = getBadgeCount(badgeId);
-        if(numberOfBadges>0) {
-            room.send("[ " + docString + " ] " + numberOfBadges + " new " + prettyPrintBadge(badgeId, badgeName));
+    private static void printBadges(Room room, String badgeId, String badgeName, PingService service) {
+        System.out.println(service.standby.get());
+        if (!service.standby.get()) {
+            int numberOfBadges = getBadgeCount(badgeId);
+            if (numberOfBadges > 0) {
+                room.send("[ " + docString + " ] " + numberOfBadges + " new " + prettyPrintBadge(badgeId, badgeName));
+            }
+            previousBadgeTimestamp = Instant.now();
         }
-        previousBadgeTimestamp = Instant.now();
     }
 
     private static String prettyPrintBadge(String badgeId, String badgeName) {
@@ -126,7 +163,7 @@ public class RunBadger {
         return true;
     }
 
-    public static void mention(Room room, PingMessageEvent event, boolean isReply) {
+    public static void mention(Room room, PingMessageEvent event, boolean isReply, PingService service) {
         String message = event.getMessage().getPlainContent();
         if(message.toLowerCase().contains("help")){
             room.send("I'm a bot that tracks badges");
@@ -224,7 +261,7 @@ public class RunBadger {
                 catch (IOException e){
                     e.printStackTrace();
                 }
-                Runnable printer = () -> printBadges(room, badgeId, badgeName);
+                Runnable printer = () -> printBadges(room, badgeId, badgeName, service);
                 executeApp(printer);
                 room.replyTo(event.getMessage().getId(),"Tracking " + prettyPrintBadge(badgeId,badgeName));
             }
@@ -241,9 +278,20 @@ public class RunBadger {
             throw new IOException("HTTP " + response.statusCode() + " fetching URL " + (url) + ". Body is: " + response.body());
         }
         JsonObject root = new JsonParser().parse(json).getAsJsonObject();
+        handleBackoff(root);
         return root;
     }
-
+    public static void handleBackoff(JsonObject root) {
+        /* Thanks to Tunaki */
+        if (root.has("backoff")) {
+            int backoff = root.get("backoff").getAsInt();
+            try {
+                Thread.sleep(1000 * backoff);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
     public static List<String> readFile(String filename) throws IOException{
         return Files.readAllLines(Paths.get(filename));
     }

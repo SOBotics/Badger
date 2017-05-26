@@ -44,6 +44,7 @@ public class RunBadger {
     public static String propertiesFile = "./data/login.properties";
     public static Instant previousBadgeTimestamp = Instant.now();
 
+    public static List<ScheduledExecutorService> services;
 
     public static void main(String[] args) {
         startApp();
@@ -63,6 +64,7 @@ public class RunBadger {
             client = new StackExchangeClient(email, password);
             Room sobotics = client.joinRoom(ChatHost.STACK_OVERFLOW ,roomId);
 
+            services = new ArrayList<>();
 
             PingService redunda = new PingService(redundaKey, "46c3719");
             redunda.start();
@@ -117,7 +119,28 @@ public class RunBadger {
     private static void executeApp(Runnable printer) {
         /* Thanks to Tunaki */
         ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+        services.add(executorService);
         executorService.scheduleAtFixedRate(printer, 0, 10, TimeUnit.MINUTES);
+    }
+
+    private static void stopApp(Room room, PingService service){
+        room.send(docString+" stopped");
+        for (ScheduledExecutorService e: services){
+            e.shutdown();
+        }
+        room.leave();
+    }
+
+    private static void standbyApp(Room room, PingService service){
+        room.send(docString+" on standby");
+        for (ScheduledExecutorService e: services){
+            e.shutdown();
+        }
+    }
+
+    private static void rebootApp(Room room, PingService service){
+        stopApp(room, service);
+        startApp();
     }
 
 
@@ -167,6 +190,18 @@ public class RunBadger {
         String message = event.getMessage().getPlainContent();
         if(message.toLowerCase().contains("help")){
             room.send("I'm a bot that tracks badges");
+        }
+        else if(message.toLowerCase().contains("reboot") &&
+                (room.getUser(event.getUserId()).isModerator() || room.getUser(event.getUserId()).isRoomOwner())){
+            rebootApp(room,service);
+        }
+        else if(message.toLowerCase().contains("standby") &&
+                (room.getUser(event.getUserId()).isModerator() || room.getUser(event.getUserId()).isRoomOwner())){
+            standbyApp(room,service);
+        }
+        else if(message.toLowerCase().contains("report") &&
+                (room.getUser(event.getUserId()).isModerator() || room.getUser(event.getUserId()).isRoomOwner())){
+            startReporting(room,service);
         }
         else if(message.toLowerCase().contains("alive")){
             room.send("Yep");
@@ -228,6 +263,7 @@ public class RunBadger {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+                rebootApp(room, service);
             }
             else{
                 room.send("Wrong format. The syntax is `untrack roomName|roomId`");
@@ -263,7 +299,7 @@ public class RunBadger {
                 }
                 Runnable printer = () -> printBadges(room, badgeId, badgeName, service);
                 executeApp(printer);
-                room.replyTo(event.getMessage().getId(),"Tracking " + prettyPrintBadge(badgeId,badgeName));
+                room.replyTo(event.getMessage().getId(),"Tracking " + prettyPrintBadge(badgeId,badgeName,true));
             }
             else {
                 room.replyTo(event.getMessage().getId(),"Wrong format. The syntax is `track badgeId badgeName`");

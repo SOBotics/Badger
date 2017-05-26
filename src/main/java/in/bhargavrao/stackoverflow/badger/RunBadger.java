@@ -126,14 +126,14 @@ public class RunBadger {
         if (!service.standby.get()) {
             int numberOfBadges = getBadgeCount(badgeId);
             if (numberOfBadges > 0) {
-                room.send("[ " + docString + " ] " + numberOfBadges + " new " + prettyPrintBadge(badgeId, badgeName));
+                room.send("[ " + docString + " ] " + numberOfBadges + " new " + prettyPrintBadge(badgeId, badgeName, numberOfBadges != 1));
             }
             previousBadgeTimestamp = Instant.now();
         }
     }
 
-    private static String prettyPrintBadge(String badgeId, String badgeName) {
-        return "[" + badgeName + " badges](//stackoverflow.com/help/badges/" + badgeId + ")";
+    private static String prettyPrintBadge(String badgeId, String badgeName, boolean plural) {
+        return "[" + badgeName + " " + (plural ? "badges" : "badge") + "](//stackoverflow.com/help/badges/" + badgeId + ")";
     }
 
     private static int getBadgeCount(String badgeId){

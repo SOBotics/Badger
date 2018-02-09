@@ -9,6 +9,8 @@ import fr.tunaki.stackoverflow.chat.StackExchangeClient;
 import fr.tunaki.stackoverflow.chat.event.EventType;
 import fr.tunaki.stackoverflow.chat.event.MessagePostedEvent;
 import fr.tunaki.stackoverflow.chat.event.PingMessageEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sobotics.PingService;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -34,7 +36,7 @@ import java.util.concurrent.TimeUnit;
  * Created by bhargav.h on 21-Oct-16.
  */
 public class RunBadger {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(RunBadger.class);
     private static final String apiKey = "kmtAuIIqwIrwkXm1*p3qqA((";
     private static final String docString = "[Badger](https://git.io/v1lYA)";
 
@@ -53,7 +55,7 @@ public class RunBadger {
     private static void startApp() {
         StackExchangeClient client;
         Properties prop = new Properties();
-
+        LOGGER.info("Badger Started");
         try {
             prop.load(new FileInputStream(propertiesFile));
             String email = prop.getProperty("email");
@@ -76,7 +78,7 @@ public class RunBadger {
             sobotics.send(docString+" started");
 
             boolean standbyMode = redunda.standby.get();
-            System.out.println(standbyMode);
+            LOGGER.info("Redunda instance on "+standbyMode);
             startReporting(sobotics, redunda);
         }
         catch (IOException e){
@@ -101,6 +103,7 @@ public class RunBadger {
 
     private static void newMessage(Room room, MessagePostedEvent event, boolean b) {
         String message = event.getMessage().getPlainContent();
+        LOGGER.debug(message);
         int cp = Character.codePointAt(message, 0);
         if(message.trim().startsWith("@bots alive")){
             room.send("@Natty alive also? I'm alive");
@@ -145,7 +148,7 @@ public class RunBadger {
 
 
     private static void printBadges(Room room, String badgeId, String badgeName, PingService service) {
-        System.out.println(service.standby.get());
+        LOGGER.debug("Redunda status: "+service.standby.get());
         if (!service.standby.get()) {
             int numberOfBadges = getBadgeCount(badgeId);
             if (numberOfBadges > 0) {
@@ -186,7 +189,7 @@ public class RunBadger {
         return true;
     }
 
-    public static void mention(Room room, PingMessageEvent event, boolean isReply, PingService service) {
+    private static void mention(Room room, PingMessageEvent event, boolean isReply, PingService service) {
         String message = event.getMessage().getPlainContent();
         if(message.toLowerCase().contains("help")){
             room.send("I'm a bot that tracks badges");
@@ -229,7 +232,7 @@ public class RunBadger {
         }
         else if(message.toLowerCase().contains("untrack")){
             if (!(room.getUser(event.getUserId()).isModerator() || room.getUser(event.getUserId()).isRoomOwner())){
-                room.replyTo(event.getMessage().getId(),"You must be a room owner like @\u200Bpetter or @\u200Btuna, or a moderator, like @bhargav to run this command.");
+                room.replyTo(event.getMessage().getId(),"You must be a room owner like @petter or @tuna, or a moderator, like @bhargav to run this command.");
                 return;
             }
             String parts[] = message.toLowerCase().split(" ");
@@ -306,7 +309,7 @@ public class RunBadger {
             }
         }
     }
-    public static JsonObject get(String url, String... data) throws IOException {
+    private static JsonObject get(String url, String... data) throws IOException {
         /* Thanks to Tunaki */
         Connection.Response response = Jsoup.connect(url).data(data).method(Connection.Method.GET).ignoreContentType(true).ignoreHttpErrors(true).execute();
         String json = response.body();
@@ -317,10 +320,11 @@ public class RunBadger {
         handleBackoff(root);
         return root;
     }
-    public static void handleBackoff(JsonObject root) {
+    private static void handleBackoff(JsonObject root) {
         /* Thanks to Tunaki */
         if (root.has("backoff")) {
             int backoff = root.get("backoff").getAsInt();
+            LOGGER.info("Backing off for " + backoff+ " seconds. Quota left "+root.get("quota_remaining").getAsString());
             try {
                 Thread.sleep(1000 * backoff);
             } catch (InterruptedException e) {
@@ -328,7 +332,7 @@ public class RunBadger {
             }
         }
     }
-    public static List<String> readFile(String filename) throws IOException{
+    private static List<String> readFile(String filename) throws IOException{
         return Files.readAllLines(Paths.get(filename));
     }
 }

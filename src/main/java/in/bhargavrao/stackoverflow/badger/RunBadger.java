@@ -101,6 +101,7 @@ public class RunBadger {
             Runnable printer = () -> printBadges(sobotics, badgeId, badgeName, service);
             executeApp(printer);
         }
+        previousBadgeTimestamp = Instant.now();
     }
 
     private static void newMessage(Room room, MessagePostedEvent event, boolean b) {
@@ -173,7 +174,6 @@ public class RunBadger {
                     room.send("[ " + docString + " ] " + numberOfBadges + " new " + prettyPrintBadge(badgeId, badgeName, numberOfBadges != 1));
                 }
             }
-            previousBadgeTimestamp = Instant.now();
         }
     }
 

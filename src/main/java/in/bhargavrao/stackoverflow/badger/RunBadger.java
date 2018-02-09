@@ -199,6 +199,7 @@ public class RunBadger {
 
     private static void mention(Room room, PingMessageEvent event, boolean isReply, PingService service) {
         String message = event.getMessage().getPlainContent();
+        LOGGER.info("New Message: "+message);
         if(message.toLowerCase().contains("help")){
             room.send("I'm a bot that tracks badges");
         }

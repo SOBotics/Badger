@@ -23,10 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -44,11 +41,11 @@ public class RunBadger {
 
     private static String username = "bad";
 
-    public static String dataFile = "./data/trackedBadges.txt";
-    public static String propertiesFile = "./data/login.properties";
-    public static Instant previousBadgeTimestamp = Instant.now();
+    private static String dataFile = "./data/trackedBadges.txt";
 
-    public static List<ScheduledExecutorService> services;
+
+    private static List<ScheduledExecutorService> services;
+    private static Map<Integer, Instant> badgeTimestamps = new HashMap<>();
 
     public static void main(String[] args) {
         startApp();
@@ -59,6 +56,7 @@ public class RunBadger {
         Properties prop = new Properties();
         LOGGER.info("Badger Started");
         try {
+            String propertiesFile = "./data/login.properties";
             prop.load(new FileInputStream(propertiesFile));
             String email = prop.getProperty("email");
             String password = prop.getProperty("password");
@@ -98,10 +96,10 @@ public class RunBadger {
         for (String i : lines) {
             String badgeId = i.split(",")[0];
             String badgeName = i.split(",")[1];
+            badgeTimestamps.put(Integer.valueOf(badgeId), Instant.now());
             Runnable printer = () -> printBadges(sobotics, badgeId, badgeName, service);
             executeApp(printer);
         }
-        previousBadgeTimestamp = Instant.now();
     }
 
     private static void newMessage(Room room, MessagePostedEvent event, boolean b) {
@@ -166,7 +164,7 @@ public class RunBadger {
                     int userId = badge.getAsJsonObject().getAsJsonObject("user").get("user_id").getAsInt();
                     String name = badge.getAsJsonObject().getAsJsonObject("user").get("display_name").getAsString();
                     if(pingable.stream().anyMatch(e->userId==e.getId())){
-                        room.send("[ " + docString + " ] Congratulations to "+name.replace(" ","")+" for winning a new Badge!");
+                        room.send("[ " + docString + " ] Congratulations to @"+name.replace(" ","")+" for winning a new Badge!");
                     }
                 }
                 int numberOfBadges = badgesArray.size();
@@ -174,6 +172,7 @@ public class RunBadger {
                     room.send("[ " + docString + " ] " + numberOfBadges + " new " + prettyPrintBadge(badgeId, badgeName, numberOfBadges != 1));
                 }
             }
+            badgeTimestamps.put(Integer.valueOf(badgeId), Instant.now());
         }
     }
 
@@ -183,7 +182,8 @@ public class RunBadger {
 
     private static JsonObject getBadges(String badgeId) throws IOException{
         String badgeIdUrl = "https://api.stackexchange.com/2.2/badges/"+badgeId+"/recipients";
-        return get(badgeIdUrl,"site","stackoverflow","pagesize","100","fromdate",String.valueOf(previousBadgeTimestamp.minusSeconds(1).getEpochSecond()),"key",apiKey);
+        Instant previousTimestamp = badgeTimestamps.get(Integer.parseInt(badgeId));
+        return get(badgeIdUrl,"site","stackoverflow","pagesize","100","fromdate",String.valueOf(previousTimestamp.minusSeconds(1).getEpochSecond()),"key",apiKey);
     }
 
     private static boolean isNumeric(String str)

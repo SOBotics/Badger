@@ -1,11 +1,13 @@
 package in.bhargavrao.stackoverflow.badger;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import fr.tunaki.stackoverflow.chat.ChatHost;
 import fr.tunaki.stackoverflow.chat.Room;
 import fr.tunaki.stackoverflow.chat.StackExchangeClient;
+import fr.tunaki.stackoverflow.chat.User;
 import fr.tunaki.stackoverflow.chat.event.EventType;
 import fr.tunaki.stackoverflow.chat.event.MessagePostedEvent;
 import fr.tunaki.stackoverflow.chat.event.PingMessageEvent;
@@ -150,9 +152,26 @@ public class RunBadger {
     private static void printBadges(Room room, String badgeId, String badgeName, PingService service) {
         LOGGER.debug("Redunda status: "+service.standby.get());
         if (!service.standby.get()) {
-            int numberOfBadges = getBadgeCount(badgeId);
-            if (numberOfBadges > 0) {
-                room.send("[ " + docString + " ] " + numberOfBadges + " new " + prettyPrintBadge(badgeId, badgeName, numberOfBadges != 1));
+            JsonObject badgesJson = null;
+            try {
+                badgesJson = getBadges(badgeId);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if (badgesJson != null) {
+                JsonArray badgesArray = badgesJson.get("items").getAsJsonArray();
+                List<User> pingable = room.getPingableUsers();
+                for (JsonElement badge: badgesArray){
+                    int userId = badge.getAsJsonObject().getAsJsonObject("user").get("user_id").getAsInt();
+                    String name = badge.getAsJsonObject().getAsJsonObject("user").get("display_name").getAsString();
+                    if(pingable.stream().anyMatch(e->userId==e.getId())){
+                        room.send("[ " + docString + " ] Congratulations to "+name.replace(" ","")+" for winning a new Badge!");
+                    }
+                }
+                int numberOfBadges = badgesArray.size();
+                if (numberOfBadges > 0) {
+                    room.send("[ " + docString + " ] " + numberOfBadges + " new " + prettyPrintBadge(badgeId, badgeName, numberOfBadges != 1));
+                }
             }
             previousBadgeTimestamp = Instant.now();
         }
@@ -160,17 +179,6 @@ public class RunBadger {
 
     private static String prettyPrintBadge(String badgeId, String badgeName, boolean plural) {
         return "[" + badgeName + " " + (plural ? "badges" : "badge") + "](//stackoverflow.com/help/badges/" + badgeId + ")";
-    }
-
-    private static int getBadgeCount(String badgeId){
-        JsonArray badges;
-        try {
-            badges = getBadges(badgeId).get("items").getAsJsonArray();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return -1;
-        }
-        return badges.size();
     }
 
     private static JsonObject getBadges(String badgeId) throws IOException{
@@ -318,6 +326,7 @@ public class RunBadger {
         }
         JsonObject root = new JsonParser().parse(json).getAsJsonObject();
         handleBackoff(root);
+        LOGGER.info(root.toString());
         return root;
     }
     private static void handleBackoff(JsonObject root) {

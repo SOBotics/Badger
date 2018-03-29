@@ -164,7 +164,7 @@ public class RunBadger {
                     int userId = badge.getAsJsonObject().getAsJsonObject("user").get("user_id").getAsInt();
                     String name = badge.getAsJsonObject().getAsJsonObject("user").get("display_name").getAsString();
                     if(pingable.stream().anyMatch(e->userId==e.getId())){
-                        room.send("[ " + docString + " ] Congratulations to @"+name.replace(" ","")+" for winning a new Badge!");
+                        room.send("[ " + docString + " ] Congratulations to @"+name.replace(" ","")+" for earning a new Badge!");
                     }
                 }
                 int numberOfBadges = badgesArray.size();

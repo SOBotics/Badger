@@ -73,7 +73,7 @@ public class RunBadger {
 
             sobotics.addEventListener(EventType.MESSAGE_REPLY, event->mention(sobotics, event, true, redunda));
             sobotics.addEventListener(EventType.USER_MENTIONED,event->mention(sobotics, event, false, redunda));
-            sobotics.addEventListener(EventType.MESSAGE_POSTED ,event-> newMessage(sobotics, event, false));
+            sobotics.addEventListener(EventType.MESSAGE_POSTED ,event-> newMessage(sobotics, event));
 
             sobotics.send(docString+" started");
 
@@ -87,7 +87,7 @@ public class RunBadger {
     }
 
     private static void startReporting(Room sobotics, PingService service) {
-        List<String> lines = new ArrayList<String>();
+        List<String> lines = new ArrayList<>();
         try {
             lines = Files.readAllLines(Paths.get(dataFile));
         } catch (IOException e) {
@@ -102,7 +102,7 @@ public class RunBadger {
         }
     }
 
-    private static void newMessage(Room room, MessagePostedEvent event, boolean b) {
+    private static void newMessage(Room room, MessagePostedEvent event) {
         String message = event.getMessage().getPlainContent();
         LOGGER.debug(message);
         int cp = Character.codePointAt(message, 0);
@@ -152,13 +152,25 @@ public class RunBadger {
         LOGGER.debug("Redunda status: "+service.standby.get());
         if (!service.standby.get()) {
             JsonObject badgesJson = null;
+            JsonArray badgesArray = null;
+            int pageNum = 1;
             try {
-                badgesJson = getBadges(badgeId);
+                badgesJson = getBadges(badgeId,pageNum);
+                if (badgesJson != null) {
+                    badgesArray = badgesJson.get("items").getAsJsonArray();
+                    while (badgesJson.has("has_more") && badgesJson.get("has_more").getAsBoolean()) {
+                        pageNum++;
+                        badgesJson = getBadges(badgeId, pageNum);
+                        badgesArray.addAll(badgesJson.get("items").getAsJsonArray());
+                    }
+                }
+
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            if (badgesJson != null) {
-                JsonArray badgesArray = badgesJson.get("items").getAsJsonArray();
+
+            if (badgesArray != null) {
+
                 List<User> pingable = room.getPingableUsers();
                 for (JsonElement badge: badgesArray){
                     int userId = badge.getAsJsonObject().getAsJsonObject("user").get("user_id").getAsInt();
@@ -180,16 +192,21 @@ public class RunBadger {
         return "[" + badgeName + " " + (plural ? "badges" : "badge") + "](//stackoverflow.com/help/badges/" + badgeId + ")";
     }
 
-    private static JsonObject getBadges(String badgeId) throws IOException{
+    private static JsonObject getBadges(String badgeId, int pageNumber) throws IOException{
         String badgeIdUrl = "https://api.stackexchange.com/2.2/badges/"+badgeId+"/recipients";
         Instant previousTimestamp = badgeTimestamps.get(Integer.parseInt(badgeId));
-        return get(badgeIdUrl,"site","stackoverflow","pagesize","100","fromdate",String.valueOf(previousTimestamp.minusSeconds(1).getEpochSecond()),"key",apiKey);
+        return get(badgeIdUrl,
+                "site","stackoverflow",
+                "page",Integer.toString(pageNumber),
+                "pagesize","100",
+                "fromdate",String.valueOf(previousTimestamp.minusSeconds(1).getEpochSecond()),
+                "key",apiKey);
     }
 
     private static boolean isNumeric(String str)
     {
         try{
-            double d = Double.parseDouble(str);
+            Double.parseDouble(str);
         }
         catch(NumberFormatException e){
             return false;

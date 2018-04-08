@@ -117,7 +117,7 @@ public class RunBadger {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            messageId.thenAccept(id -> room.edit(id, "\uD83D\uDE83"));
+            messageId.thenAccept(id -> room.edit(id, "[\uD83D\uDE83](https://www.youtube.com/watch?v=EIyixC9NsLI)"));
         }
     }
 

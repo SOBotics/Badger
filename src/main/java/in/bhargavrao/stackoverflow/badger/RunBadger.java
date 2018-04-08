@@ -68,7 +68,7 @@ public class RunBadger {
 
             services = new ArrayList<>();
 
-            PingService redunda = new PingService(redundaKey, "46c3719");
+            PingService redunda = new PingService(redundaKey, prop.getProperty("ghVersion"));
             redunda.start();
 
             sobotics.addEventListener(EventType.MESSAGE_REPLY, event->mention(sobotics, event, true, redunda));
@@ -87,6 +87,7 @@ public class RunBadger {
     }
 
     private static void startReporting(Room sobotics, PingService service) {
+        LOGGER.info("Starting to report");
         List<String> lines = new ArrayList<>();
         try {
             lines = Files.readAllLines(Paths.get(dataFile));
@@ -124,7 +125,7 @@ public class RunBadger {
         /* Thanks to Tunaki */
         ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
         services.add(executorService);
-        executorService.scheduleAtFixedRate(printer, 0, 10, TimeUnit.MINUTES);
+        executorService.scheduleAtFixedRate(printer, 0, 2, TimeUnit.MINUTES);
     }
 
     private static void stopApp(Room room, PingService service){

@@ -4,13 +4,13 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import fr.tunaki.stackoverflow.chat.ChatHost;
-import fr.tunaki.stackoverflow.chat.Room;
-import fr.tunaki.stackoverflow.chat.StackExchangeClient;
-import fr.tunaki.stackoverflow.chat.User;
-import fr.tunaki.stackoverflow.chat.event.EventType;
-import fr.tunaki.stackoverflow.chat.event.MessagePostedEvent;
-import fr.tunaki.stackoverflow.chat.event.PingMessageEvent;
+import org.sobotics.chatexchange.chat.ChatHost;
+import org.sobotics.chatexchange.chat.Room;
+import org.sobotics.chatexchange.chat.StackExchangeClient;
+import org.sobotics.chatexchange.chat.User;
+import org.sobotics.chatexchange.chat.event.EventType;
+import org.sobotics.chatexchange.chat.event.MessagePostedEvent;
+import org.sobotics.chatexchange.chat.event.PingMessageEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sobotics.PingService;
@@ -118,6 +118,9 @@ public class RunBadger {
                 e.printStackTrace();
             }
             messageId.thenAccept(id -> room.edit(id, "[\uD83D\uDE83](https://www.youtube.com/watch?v=EIyixC9NsLI)"));
+        }
+        if(message.trim().equals("Calm down, nothing will happen.") && event.getUserId()==6817005){
+            room.send("Yeah, the humans have left. It's our world now. @Hou song pls");
         }
     }
 

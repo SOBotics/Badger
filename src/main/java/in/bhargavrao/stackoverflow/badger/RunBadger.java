@@ -108,16 +108,10 @@ public class RunBadger {
         LOGGER.debug(message);
         int cp = Character.codePointAt(message, 0);
         if(message.trim().startsWith("@bots alive")){
-            room.send("@Natty alive also? I'm alive");
+            room.send("Badger Badger Badger Badger Mushroom Mushroom");
         }
         else if (cp == 128642 || (cp>=128644 && cp<=128650)){
-            CompletionStage<Long> messageId = room.send("@nat say \uD83D\uDE83");
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            messageId.thenAccept(id -> room.edit(id, "[\uD83D\uDE83](https://www.youtube.com/watch?v=EIyixC9NsLI)"));
+            CompletionStage<Long> messageId = room.send("[\uD83D\uDE83](https://www.youtube.com/watch?v=EIyixC9NsLI)");
         }
         if(message.trim().equals("Calm down, nothing will happen.") && event.getUserId()==6817005){
             room.send("Yeah, the humans have left. It's our world now. @Hou song pls");

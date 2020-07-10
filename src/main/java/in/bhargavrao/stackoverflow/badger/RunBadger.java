@@ -61,15 +61,23 @@ public class RunBadger {
             String email = prop.getProperty("email");
             String password = prop.getProperty("password");
             String redundaKey = prop.getProperty("redundaKey");
+            boolean useRedunda = prop.getProperty("useRedunda").equals("true");
             username = prop.getProperty("username").substring(0,3).toLowerCase();
             int roomId = Integer.parseInt(prop.getProperty("roomId"));
             client = new StackExchangeClient(email, password);
             Room sobotics = client.joinRoom(ChatHost.STACK_OVERFLOW ,roomId);
 
             services = new ArrayList<>();
-
             PingService redunda = new PingService(redundaKey, prop.getProperty("ghVersion"));
-            redunda.start();
+
+            if (useRedunda) {
+                redunda.start();
+                boolean standbyMode = redunda.standby.get();
+                LOGGER.info("Redunda instance on " + standbyMode);
+            }
+            else {
+                redunda.setDebugging(true);
+            }
 
             sobotics.addEventListener(EventType.MESSAGE_REPLY, event->mention(sobotics, event, true, redunda));
             sobotics.addEventListener(EventType.USER_MENTIONED,event->mention(sobotics, event, false, redunda));
@@ -77,8 +85,6 @@ public class RunBadger {
 
             sobotics.send(docString+" started");
 
-            boolean standbyMode = redunda.standby.get();
-            LOGGER.info("Redunda instance on "+standbyMode);
             startReporting(sobotics, redunda);
         }
         catch (IOException e){
